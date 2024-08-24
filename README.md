@@ -20,3 +20,4 @@ When lr of G 10 times bigger than D (10^-4 and 10^-3, resp), the model colapse v
 We've figure out that using dataloader to load data contribute to the efficiency of CUDA core, so we decide to use the old method to load data (shuffle and slice data).
 Note : Train 2 is just for experiment
 =======
+a
