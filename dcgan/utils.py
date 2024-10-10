@@ -18,10 +18,10 @@ class EWC:
 
     def _calc_fisher(self, likelihood, nsample=1):
         grads = autograd.grad(likelihood, self._model_anchor.parameters())
-        fs = [(g**2).sum()/nsample for g in grads]
+        _fishers = [(g**2)/nsample for g in grads]
 
         param_names = [name for name, _ in self._model_anchor.named_parameters()]
-        fs_dict = {n: f.item() for n, f in zip(param_names, fs)}
+        fs_dict = {n: f for n, f in zip(param_names, _fishers)}
 
         return fs_dict
     
