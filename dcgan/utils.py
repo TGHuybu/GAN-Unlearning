@@ -24,13 +24,14 @@ class EWC:
         fs_dict = {n: f for n, f in zip(param_names, _fishers)}
 
         return fs_dict
-    
+
 
     def set_fisher(self, likelihood, nsample=1):
         self._fishers = self._calc_fisher(likelihood, nsample=nsample)
 
 
-    def get_fisher(self): return self._fishers
+    def get_fisher(self): 
+        return self._fishers
 
     
     def calc_ewc(self, model, weight=5e8):
@@ -47,24 +48,3 @@ class EWC:
 def loss_adapt(l_adv, ewc, model, weight=5e8):
     l_ewc = ewc.calc_ewc(model, weight=weight)
     return l_adv + l_ewc
-
-# def make_image(epoch, generator, examples=25, dim=(5,5), figsize=(10,10)):
-#     noise= torch.randn(examples, latent_size).to(device)
-#     with torch.no_grad():
-#         generated_images = generator(noise).detach().cpu()
-#     plt.figure(figsize=figsize)
-#     plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1)
-
-
-#     for i in range(generated_images.shape[0]):
-#         # Ghép các kênh màu lại thành một ảnh RGB
-#         plt.subplot(5, 5, i + 1)
-#         image = generated_images[i].permute(1,2,0)
-#         plt.imshow(image,interpolation='nearest',cmap='gray_r')
-#         plt.axis('off')
-
-#     plt.tight_layout()
-#     path = 'D:\Adapt_rs'
-#     plt.savefig(os.path.join(path,'gan_generated_image %d.png' %epoch))
-#     plt.close('all')
-#     # plt.show()

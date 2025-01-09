@@ -32,7 +32,7 @@ class DCGAN():
         self.d_history = []
 
     
-    def train(self, dataloader, verbose=False, checkpoint=False):
+    def train(self, dataloader, verbose=False, checkpoint_every=None):
         for epoch in range(self._num_epochs):
 
             avg_loss_d = 0 
@@ -59,11 +59,8 @@ class DCGAN():
                 self.d_history.append(avg_loss_d.detach().cpu().numpy())
                 self.g_history.append(avg_loss_g.detach().cpu().numpy())
 
-                # if epoch != num_epochs:
-                #     clear_output()
-
                 if verbose:
-                    print(f'Loss_D: {avg_loss_d.item():.4f} Loss_G: {avg_loss_g.item():.4f} ' 
+                    print(f'## EPOCH {epoch}: Loss_D: {avg_loss_d.item():.4f} Loss_G: {avg_loss_g.item():.4f} ' 
                           f'D(x): {D_x:.4f} D(G(z)): {D_G_z1:.4f} / {D_G_z2:.4f}')
                 
                 # if checkpoint and (epoch % 5 == 0):
