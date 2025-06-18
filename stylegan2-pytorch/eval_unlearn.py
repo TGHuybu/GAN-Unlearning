@@ -41,10 +41,9 @@ class FacialAttributeClassifier:
         with torch.no_grad():
             output = self.model(img_tensor)
         
-        target_idx = np.where(self.attributes == target_class)
+        target_idx = np.where(self.attributes == target_class)[0]
         output = output.cpu().numpy()
-        predictions = (output[:, target_idx] >= 0).astype(int)
-        # print(target_idx, self.attributes[target_idx], np.sum(predictions))
+        predictions = (output[:, target_idx] >= 0).astype(int).flatten()
         
         return np.sum(predictions)
     
