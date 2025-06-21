@@ -116,7 +116,7 @@ def set_grad_none(model, targets):
             p.grad = None
 
 
-def unlearn(args, loader, generator, discriminator, g_optim, d_optim, g_ema, device, rloss):
+def unlearn(args, loader, generator, discriminator, g_optim, d_optim, g_ema, device, rloss, mask=None):
     # consolidation_loss_history = []
     # iter_history = []
 
@@ -235,6 +235,12 @@ def unlearn(args, loader, generator, discriminator, g_optim, d_optim, g_ema, dev
         loss_dict["g"] = g_loss
         generator.zero_grad()
         g_loss.backward()
+
+        # APPLY MASK IF ANY
+        if mask is not None:
+            for name, param in generator.named_parameters():
+                if param.grad is not None:
+                    param.grad = mask[name].to(device) * param.grad
         g_optim.step()
         
         g_regularize = i % args.g_reg_every == 0
@@ -257,6 +263,12 @@ def unlearn(args, loader, generator, discriminator, g_optim, d_optim, g_ema, dev
             g_reg_repulsion_loss = rloss._compute_repulsion_loss(generator)
             weighted_path_loss += g_reg_repulsion_loss
             weighted_path_loss.backward()
+            
+            # APPLY MASK IF ANY
+            if mask is not None:
+                for name, param in generator.named_parameters():
+                    if param.grad is not None:
+                        param.grad = mask[name].to(device) * param.grad
             g_optim.step()
 
             mean_path_length_avg = (
@@ -355,6 +367,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--adapted_ckpt", 
         type=str, nargs="+", default=None, help="path(s) to adapted model(s)"
+    )
+    parser.add_argument(
+        "--mask",
+        type=str,
+        default=None,
+        help="path to the checkpoints to resume training",
     )
 
     # unlearn args
@@ -566,6 +584,12 @@ if __name__ == "__main__":
         adapted_ckpt = torch.load(ackpt, map_location=lambda storage, loc: storage, weights_only=False)
         gs_adapted[i].load_state_dict(adapted_ckpt["g"], strict=False)
         del adapted_ckpt
+
+    print("load saliency mask:", args.mask)
+    if args.mask is not None:
+        with torch.serialization.safe_globals([argparse.Namespace]):
+            mask = torch.load(args.mask, map_location=lambda storage, loc: storage, weights_only=True)
+    else: mask = None
     
     # load dataset
     transform = transforms.Compose([
@@ -591,5 +615,5 @@ if __name__ == "__main__":
     #-----------------------------------------------------------------
     os.makedirs(f"{args.outdir}/sample", exist_ok=True)
     os.makedirs(f"{args.outdir}/model", exist_ok=True)
-    unlearn(args, loader, generator, discriminator, g_optim, d_optim, g_ema, device, rloss=rloss)
+    unlearn(args, loader, generator, discriminator, g_optim, d_optim, g_ema, device, rloss=rloss, mask=mask)
     # fid_score(args)
