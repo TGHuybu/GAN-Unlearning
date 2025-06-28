@@ -79,7 +79,7 @@ def masking(args, generator, discriminator, num, device):
     requires_grad(generator, True)
     requires_grad(discriminator, False)
 
-    top_ratio=0.5
+    top_ratio = args.top_ratio
 
     save_path = os.path.join(args.outdir, "mask.pt")
 
@@ -148,6 +148,9 @@ if __name__ == "__main__":
     parser.add_argument('--arch', type=str, default='stylegan2', help='model architectures (stylegan2 | swagan)')
     parser.add_argument(
         "--num", type=int, default=100, help="gradient accumulation loops"
+    )
+    parser.add_argument(
+        "--top_ratio", type=float, default=0.5, help="top saliency ranking ratio"
     )
     parser.add_argument(
         "--batch", type=int, default=16, help="batch sizes for each gpus"
