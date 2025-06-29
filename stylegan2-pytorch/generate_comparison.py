@@ -116,6 +116,12 @@ if __name__ == "__main__":
         default="None",
         help="path to the model checkpoint",
     )
+    parser.add_argument(
+        "--ckpt_unlearn_l2ens",
+        type=str,
+        default="None",
+        help="path to the model checkpoint",
+    )
     parser.add_argument("--classifier", type=str, required=True, help="path to the classifier")
     parser.add_argument("--attr_list", type=str, required=True, help="path to the attribute list")
     parser.add_argument(
@@ -219,5 +225,18 @@ if __name__ == "__main__":
             g_l2exp.load_state_dict(checkpoint_l2exp["g_ema"], strict=False)
             generate(args, g_l2exp, latents, device, mean_latent, name="unlearned_l2exp")
             del g_l2exp, checkpoint_l2exp
+        except Exception as e:
+            print(e)
+
+    if args.ckpt_unlearn_l2ens != "None":
+        try:
+            g_l2ens = Generator(
+                args.size, args.latent, args.n_mlp, channel_multiplier=args.channel_multiplier
+            ).to(device)
+            with torch.serialization.safe_globals([argparse.Namespace]):
+                checkpoint_l2ens = torch.load(args.ckpt_unlearn_l2ens, weights_only=True)
+            g_l2ens.load_state_dict(checkpoint_l2ens["g_ema"], strict=False)
+            generate(args, g_l2ens, latents, device, mean_latent, name="unlearned_l2ens")
+            del g_l2ens, checkpoint_l2ens
         except Exception as e:
             print(e)
