@@ -384,6 +384,18 @@ if __name__ == "__main__":
         help="repulsion loss type [ l2inv | l2neg | l2exp ]",
     )
     parser.add_argument(
+        "--alpha",
+        type=float,
+        default=0.3,
+        help="param for 'l2ens' loss type",
+    )
+    parser.add_argument(
+        "--beta",
+        type=float,
+        default=0.7,
+        help="param for 'l2ens' loss type",
+    )
+    parser.add_argument(
         "--rl_weight",
         type=float,
         default=10,
@@ -396,9 +408,9 @@ if __name__ == "__main__":
         help="param difference weight",
     )
     parser.add_argument(
-        "--alpha",
+        "--exp_lambda",
         type=float,
-        default=0.005,
+        default=0.05,
         help="param for 'l2exp' loss type",
     )
     parser.add_argument(
@@ -609,7 +621,8 @@ if __name__ == "__main__":
     # repulsion loss computer
     rloss = RepulsionLoss(
         gs_adapted, loss_type=args.loss_type, 
-        alpha=args.alpha, weight=args.rl_weight, dweight=args.dweight, do_scale=args.scale_rloss
+        alpha=args.alpha, beta=args.beta, exp_lambda=args.exp_lambda, 
+        weight=args.rl_weight, dweight=args.dweight, do_scale=False
     )
 
     #-----------------------------------------------------------------
