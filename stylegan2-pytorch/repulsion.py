@@ -15,15 +15,17 @@ def calc_scaling_fact(num):
 
 
 class RepulsionLoss:
-    def __init__(self, models, loss_type="l2exp", alpha=0.005, weight=10, dweight=1, do_scale=False):
+    def __init__(self, models, loss_type="l2exp", alpha=0.3, beta=0.7, exp_lambda=0.05, weight=10, dweight=1, do_scale=False):
         self.weight = weight
         self.device = torch.device('cuda')
         self.loss = loss_type
         self.alpha = alpha
+        self.beta = beta
+        self.exp_lambda = exp_lambda
         self.dweight = dweight
         self.do_scale_distance = do_scale
 
-        if self.loss not in ["l2inv", "l2neg", "l2exp"]:
+        if self.loss not in ["l2inv", "l2neg", "l2exp", "l2ens"]:
             self.loss = "l2exp"
             
         # Update mean params
@@ -41,29 +43,41 @@ class RepulsionLoss:
     def _compute_repulsion_loss(self, unlearning_model):
         try:
             # total_rloss = 0
-            total_diff = 0
+            total_diff, ang_vals = 0., []
             for adapted_model in self.adapted_models:
-                losses = []
-                n_params = 0
+                diff2, n_params = 0., 0
+                dot = nu = nv = 0  # For angular
+
                 for param_name, param in unlearning_model.named_parameters():
                     _buff_param_name = param_name.replace('.', '__')
-                    estimated_mean = getattr(adapted_model, f'{_buff_param_name}_estimated_mean')
-                    losses.append(((param - estimated_mean) ** 2).sum())
+                    p_neg = getattr(adapted_model, f'{_buff_param_name}_estimated_mean')
+
+                    diff2 += ((param - p_neg) ** 2).sum()
                     n_params += param.numel()
 
-                # add 1 to push a bit further
-                sum_diff_squared = self.dweight * (sum(losses) / n_params)
-                print(f"-- numel: {n_params}, mean diff: {sum_diff_squared}")
+                    # ---- Angular thành phần (dùng cos giữa θ & θ_N) ----
+                    if self.loss == "l2ens":
+                        u = param.view(-1)
+                        v = p_neg.view(-1)
+                        dot += (u * v).sum()
+                        nu  += (u * u).sum()
+                        nv  += (v * v).sum()
+
+                d2  = self.dweight * (diff2 / n_params)
+                total_diff += d2
+                # print(f"-- numel: {n_params}, mean diff: {sum_diff_squared}")
+
+                if self.loss == "l2ens":
+                    cos = dot / (nu.sqrt() * nv.sqrt() + 1e-8)
+                    ang_vals.append(F.relu(cos))    # max(0, cos)
 
                 # idea from official code, how does it work? idk...
                 # not sure if this should be used, should be turned off
                 # for all run in the thesis (i think)
-                if self.do_scale_distance:
-                    scale_factor = 10**calc_scaling_fact(sum_diff_squared)
-                    sum_diff_squared = sum_diff_squared / scale_factor
-                    print("-- SCALED sum diff squared: ", sum_diff_squared)
-
-                total_diff += sum_diff_squared
+                # if self.do_scale_distance:
+                #     scale_factor = 10**calc_scaling_fact(sum_diff_squared)
+                #     sum_diff_squared = sum_diff_squared / scale_factor
+                #     print("-- SCALED sum diff squared: ", sum_diff_squared)
             
             print(f"-- TOTAL DIFF: {total_diff}")
 
@@ -72,8 +86,12 @@ class RepulsionLoss:
             elif self.loss == "l2neg":
                 total_rloss = self.weight * (-total_diff)
             elif self.loss == "l2exp":
-                total_rloss = self.weight * torch.exp(-self.alpha * total_diff)
+                total_rloss = self.weight * torch.exp(-self.exp_lambda * total_diff)
+            elif self.loss == "l2ens":
+                loss_exp = self.weight * torch.exp(-self.exp_lambda * total_diff)
+                loss_ang = torch.stack(ang_vals).mean()
+                total_rloss = self.alpha * loss_ang + self.beta * loss_exp
             return total_rloss
         
         except AttributeError:
-            return 0
+            return torch.tensor(0., device=self.device)
