@@ -380,8 +380,20 @@ if __name__ == "__main__":
         "--loss_type",
         type=str,
         default="l2exp",
-        choices=["l2inv", "l2neg", "l2exp"],
-        help="repulsion loss type [ l2inv | l2neg | l2exp ]",
+        choices=["l2inv", "l2neg", "l2exp", "l2ens"],
+        help="repulsion loss type [ l2inv | l2neg | l2exp | l2ens ]",
+    )
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        default=0.3,
+        help="param for 'l2ens' loss type",
+    )
+    parser.add_argument(
+        "--beta",
+        type=float,
+        default=0.7,
+        help="param for 'l2ens' loss type",
     )
     parser.add_argument(
         "--alpha",
