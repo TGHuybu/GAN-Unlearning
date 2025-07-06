@@ -396,18 +396,6 @@ if __name__ == "__main__":
         help="param for 'l2ens' loss type",
     )
     parser.add_argument(
-        "--alpha",
-        type=float,
-        default=0.3,
-        help="param for 'l2ens' loss type",
-    )
-    parser.add_argument(
-        "--beta",
-        type=float,
-        default=0.7,
-        help="param for 'l2ens' loss type",
-    )
-    parser.add_argument(
         "--rl_weight",
         type=float,
         default=10,
