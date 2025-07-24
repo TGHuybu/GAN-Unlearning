@@ -36,14 +36,14 @@ class FacialAttributeClassifier:
         self.attributes = np.loadtxt(attributes_file, dtype=str)
 
 
-    def flag_attr(self, image_batch, target_class):
+    def flag_attr(self, image_batch, target_class, thresh=0.0):
         img_tensor = self.transform(image_batch).to(self.device)
         with torch.no_grad():
             output = self.model(img_tensor)
         
         target_idx = np.where(self.attributes == target_class)[0]
         output = output.cpu().numpy()
-        flags = (output[:, target_idx] >= 0).flatten()
+        flags = (output[:, target_idx] >= thresh).flatten()
         
         return flags
 
@@ -59,7 +59,7 @@ def find_target_latent(args, g_ema, classifier, device, mean_latent):
                 [sample_z], truncation=args.truncation, truncation_latent=mean_latent
             )
 
-            flags = classifier.flag_attr(sample, args.neg_class)
+            flags = classifier.flag_attr(sample, args.neg_class, thresh=args.thresh)
             sample_z = sample_z.cpu().numpy()
             sample_z_target = sample_z[flags]
             if sample_z_target.shape[0] != 0:
@@ -127,6 +127,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--neg_class", 
         type=str, default="Eyeglasses", help="undesired attribute class (see file attr_names.txt)"
+    )
+    parser.add_argument(
+        "--thresh",
+        type=float,
+        default=0.0,
+        help="classifier positive decision threshold (>0)",
     )
 
     parser.add_argument(
